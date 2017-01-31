@@ -52,6 +52,15 @@
         </bean>
       </list>
     </argument>
+    <argument>
+      <list>
+        <bean id="fedoraProvider" class="org.fcrepo.camel.ldpath.FedoraProvider">
+          <argument ref="authScope"/>
+          <argument ref="credentials"/>
+          <argument type="java.lang.String" value="${fcrepo.baseUrl}"/>
+        </bean>
+      </list>
+   </argument>
     <!--<argument ref="endpoints"/>-->
     <!--<argument ref="providers"/>-->
   </bean>
