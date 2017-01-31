@@ -21,6 +21,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 import org.apache.marmotta.ldclient.api.endpoint.Endpoint;
 import org.apache.marmotta.ldclient.provider.rdf.LinkedDataProvider;
+import org.fcrepo.client.FcrepoHttpClientBuilder;
 import org.fcrepo.client.FcrepoLink;
 
 import java.io.IOException;
@@ -30,15 +31,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.Credentials;
-import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpHead;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.HttpClients;
 import org.slf4j.Logger;
 
 
@@ -57,20 +53,13 @@ public class FedoraProvider extends LinkedDataProvider {
 
     private final String NON_RDF_SOURCE_URI = "http://www.w3.org/ns/ldp#NonRDFSource";
 
-    private final String baseUrl;
-
-    FedoraProvider(final AuthScope authScope, final Credentials credentials, final String baseUrl) {
-        Objects.requireNonNull(baseUrl);
-        this.baseUrl = baseUrl;
-        if (credentials != null && authScope != null) {
-            final CredentialsProvider credsProvider = new BasicCredentialsProvider();
-            credsProvider.setCredentials(authScope, credentials);
-            httpClient = HttpClients.custom()
-                    .setDefaultCredentialsProvider(credsProvider)
-                    .useSystemProperties().build();
-        } else {
-            httpClient = HttpClients.createSystem();
-        }
+    /**
+     * FedoraProvider
+     * @param builder FcrepoHttpClientBuilder for building HttpClient
+     */
+    public FedoraProvider(final FcrepoHttpClientBuilder builder) {
+        Objects.requireNonNull(builder);
+        httpClient = builder.build();
     }
 
     /**
@@ -91,12 +80,13 @@ public class FedoraProvider extends LinkedDataProvider {
      */
     @Override
     public List<String> buildRequestUrl(final String resourceUri, final Endpoint endpoint) {
+        LOGGER.debug("Processing: " + resourceUri);
         Objects.requireNonNull(resourceUri);
         try {
             final Optional<String> nonRdfSourceDescUri =
-                    getNonRDFSourceDescribedByUri(baseUrl + resourceUri);
+                    getNonRDFSourceDescribedByUri(resourceUri);
             if ( nonRdfSourceDescUri.isPresent() ) {
-                return Collections.singletonList(nonRdfSourceDescUri.get().substring(33));
+                return Collections.singletonList(nonRdfSourceDescUri.get());
             }
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
@@ -123,6 +113,7 @@ public class FedoraProvider extends LinkedDataProvider {
                     isNonRDFSource = true;
                 }
             }
+            LOGGER.debug("isNonRDFSource: " + isNonRDFSource);
             if (isNonRDFSource && descriptionUri != null) {
                 nonRdfSourceDescUri = Optional.of(descriptionUri);
             }
@@ -138,6 +129,7 @@ public class FedoraProvider extends LinkedDataProvider {
     private Header[] getLinkHeaders(final String resourceUri) throws IOException {
         final HttpHead request = new HttpHead(resourceUri);
         final HttpResponse response = httpClient.execute(request);
+        LOGGER.debug("Got: " + response.getStatusLine().getStatusCode() + " for HEAD " + resourceUri);
         return response.getHeaders("Link");
     }
 

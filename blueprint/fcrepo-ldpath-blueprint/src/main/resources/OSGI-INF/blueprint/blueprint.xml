@@ -41,28 +41,32 @@
     <argument index="1" type="int" value="${fcrepo.authPort}"/>
   </bean>
 
+  <bean id="fcrepoHttpClientBuilder" class="org.fcrepo.client.FcrepoHttpClientBuilder">
+    <argument index="0" type="java.lang.String" value="${fcrepo.authUsername}"/>
+    <argument index="1" type="java.lang.String" value="${fcrepo.authPassword}"/>
+    <argument index="2" type="java.lang.String" value="${fcrepo.authHostname}"/>
+  </bean>
+
   <bean id="client" class="org.fcrepo.camel.ldpath.ClientFactory" factory-method="createClient">
     <argument ref="authScope"/>
     <argument ref="credentials"/>
+    <!-- List of optional endpoints -->
     <argument>
       <list>
-        <bean id="fedoraEndpoint" class="org.fcrepo.camel.ldpath.FedoraEndpoint">
+        <bean class="org.fcrepo.camel.ldpath.FedoraEndpoint">
           <argument index="0" type="java.lang.String" value="${fcrepo.baseUrl}"/>
           <argument index="1" type="java.lang.Long" value="${fcrepo.cache.timeout}"/>
         </bean>
       </list>
     </argument>
+    <!-- List of optional providers -->
     <argument>
       <list>
-        <bean id="fedoraProvider" class="org.fcrepo.camel.ldpath.FedoraProvider">
-          <argument ref="authScope"/>
-          <argument ref="credentials"/>
-          <argument type="java.lang.String" value="${fcrepo.baseUrl}"/>
+        <bean class="org.fcrepo.camel.ldpath.FedoraProvider">
+          <argument ref="fcrepoHttpClientBuilder"/>
         </bean>
       </list>
-   </argument>
-    <!--<argument ref="endpoints"/>-->
-    <!--<argument ref="providers"/>-->
+    </argument>
   </bean>
 
   <bean id="config" class="org.apache.marmotta.ldcache.model.CacheConfiguration">
